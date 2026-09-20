@@ -1,0 +1,129 @@
+#include <ESP32Servo.h>
+
+Servo servo;
+
+#define IN1 25
+#define IN2 26
+#define IN3 27
+#define IN4 14
+
+#define TRIG 18
+#define ECHO 19
+
+#define SERVO_PIN 13
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  pinMode(TRIG, OUTPUT);
+  pinMode(ECHO, INPUT);
+
+  servo.attach(SERVO_PIN);
+  servo.write(90);
+
+  stopCar();
+  delay(1000);
+}
+
+long getDistance() {
+  digitalWrite(TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
+
+  long duration = pulseIn(ECHO, HIGH, 30000);
+
+  if (duration == 0)
+    return 400;
+
+  return duration * 0.0343 / 2;
+}
+
+void forward() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
+
+void backward() {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+}
+
+void stopCar() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+}
+
+void turnLeft() {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+  delay(450);
+  stopCar();
+}
+
+void turnRight() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+  delay(450);
+  stopCar();
+}
+
+long lookLeft() {
+  servo.write(150);
+  delay(500);
+  return getDistance();
+}
+
+long lookRight() {
+  servo.write(30);
+  delay(500);
+  return getDistance();
+}
+
+void loop() {
+  servo.write(90);
+  delay(100);
+
+  long front = getDistance();
+
+  if (front > 25) {
+    forward();
+  } else {
+    stopCar();
+    delay(200);
+
+    long left = lookLeft();
+    long right = lookRight();
+
+    servo.write(90);
+    delay(200);
+
+    if (left > right && left > 20) {
+      turnLeft();
+    } else if (right > left && right > 20) {
+      turnRight();
+    } else {
+      backward();
+      delay(400);
+      stopCar();
+      delay(200);
+      turnRight();
+    }
+  }
+}
